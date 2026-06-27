@@ -1,5 +1,4 @@
 import { usePlayerStore } from '../state/playerScore';
-import { convertFileSrc } from '@tauri-apps/api/core';
 
 const audioElement = new Audio();
 
@@ -21,5 +20,25 @@ export const audioService ={
         usePlayerStore.getState().setIsPlaying(true);
     },
 
-    
-}
+    pause: () => {
+        audioElement.pause();
+        usePlayerStore.getState().setIsPlaying(false);
+    },
+
+    seek: (time: number) => {
+        audioElement.currentTime=time;
+        usePlayerStore.getState().setCurrentTime(time);
+    },
+
+    setVolume: (volume: number) => {
+        audioElement.volume = volume;
+        usePlayerStore.getState().setVolume(volume);
+    },
+
+    loadSong: (file: File) => {
+        const objectUrl = URL.createObjectURL(file);
+        audioElement.src = objectUrl;
+        audioElement.load();
+        usePlayerStore.getState().setCurrentSong(file.name);
+    }
+};
