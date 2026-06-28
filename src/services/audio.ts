@@ -6,8 +6,19 @@ audioElement.addEventListener('timeupdate', () => {
     usePlayerStore.getState().setCurrentTime(audioElement.currentTime);
 });
 
-audioElement.addEventListener('loadmetadata', () => {
-    usePlayerStore.getState().setDuration(audioElement.duration);
+
+audioElement.addEventListener('loadedmetadata', () => {
+  usePlayerStore.getState().setDuration(audioElement.duration);
+});
+
+
+audioElement.addEventListener('durationchange', () => {
+  usePlayerStore.getState().setDuration(audioElement.duration);
+});
+
+
+audioElement.addEventListener('canplay', () => {
+  usePlayerStore.getState().setDuration(audioElement.duration);
 });
 
 audioElement.addEventListener('ended', () => {
