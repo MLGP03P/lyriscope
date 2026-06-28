@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { PlayerBar } from './components/player/PlayerBar';
 import { audioService } from './services/audio';
+import { usePlayerStore } from './state/playerScore';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
+  
+  const recentSong = usePlayerStore((state) => state.recentSong);
+  const currentSongPath = usePlayerStore((state) => state.currentSongPath);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -50,10 +54,24 @@ function App() {
     }}>
       
       <h1>Lyriscope</h1>
-      <p style={{ color: '#888' }}>
-        {/* dynamic text for drag and drop */}
+      <p style={{ color: '#888', marginBottom: '10px' }}>
         {isDragging ? 'Elibereaza melodia aici...' : 'Trage o melodie oriunde in fereastra pentru a o reda.'}
       </p>
+
+      {/* shows the last song if no song is currently playing */}
+      {!currentSongPath && recentSong && (
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '10px 20px', 
+          backgroundColor: '#181818', 
+          borderRadius: '8px',
+          border: '1px solid #333',
+          fontSize: '14px',
+          color: '#aaa'
+        }}>
+          🎵 Last played song: <strong style={{ color: 'white' }}>{recentSong}</strong>
+        </div>
+      )}
       
       <PlayerBar />
 

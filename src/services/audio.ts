@@ -2,6 +2,8 @@ import { usePlayerStore } from '../state/playerScore';
 
 const audioElement = new Audio();
 
+audioElement.volume = usePlayerStore.getState().volume;
+
 audioElement.addEventListener('timeupdate', () => {
     usePlayerStore.getState().setCurrentTime(audioElement.currentTime);
 });
