@@ -8,12 +8,17 @@ interface PlayerState {
   duration: number;
   currentSongPath: string | null;
   recentSong: string | null;
+
+  title: string | null;
+  artist: string | null;
   
   setIsPlaying: (isPlaying: boolean) => void;
   setVolume: (volume: number) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setCurrentSong: (path: string) => void;
+
+  setMetadata: (title: string | null, artist: string | null) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -26,6 +31,9 @@ export const usePlayerStore = create<PlayerState>()(
       currentSongPath: null,
       recentSong: null,
 
+      title: null,
+      artist: null,
+
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       setVolume: (volume) => set({ volume }),
       setCurrentTime: (currentTime) => set({ currentTime }),
@@ -34,8 +42,12 @@ export const usePlayerStore = create<PlayerState>()(
       setCurrentSong: (path) => set({ 
         currentSongPath: path, 
         recentSong: path, 
-        isPlaying: true 
+        isPlaying: true,
+
+        title: null,
+        artist: null
       }),
+      setMetadata: (title, artist) => set({ title, artist }),
     }),
     {
       name: 'lyriscope-storage',

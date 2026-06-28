@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { PlayerBar } from './components/player/PlayerBar';
 import { audioService } from './services/audio';
-import { usePlayerStore } from './state/playerScore';
+import { usePlayerStore } from './state/playerStore';
 import { LyricsDisplay } from './components/lyrics/LyricsDisplay';
 import { lyricsService } from './services/lyrics';
 import { useLyricsStore } from './state/lyricsStore';
 import { LyricsSettings } from './components/lyrics/LyricsSettings';
+import { invoke } from '@tauri-apps/api/core';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
@@ -44,6 +45,18 @@ function App() {
         audioService.loadSong(file);
         audioService.play();
         useLyricsStore.getState().resetLyrics();
+
+        const filePath = (file as any).path;
+
+        if(filePath) {
+          invoke('read_metadata', {path: filePath})
+          .then((metadata: any) => {
+            usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
+          })
+          .catch((err) => {
+            console.error('Error reading metadata:', err);
+          });
+        }
       }
     }
   };

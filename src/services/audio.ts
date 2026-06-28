@@ -1,4 +1,4 @@
-import { usePlayerStore } from '../state/playerScore';
+import { usePlayerStore } from '../state/playerStore';
 import { useLyricsStore } from '../state/lyricsStore';
 
 const audioElement = new Audio();

@@ -1,4 +1,4 @@
-import { usePlayerStore } from '../../state/playerScore';
+import { usePlayerStore } from '../../state/playerStore';
 import { audioService } from '../../services/audio';
 
 const formatTime = (timeInSeconds: number) => {
@@ -15,6 +15,9 @@ export function PlayerBar() {
     const currentTime = usePlayerStore((state) => state.currentTime);
     const duration = usePlayerStore((state) => state.duration);
     const volume = usePlayerStore((state) => state.volume);
+
+    const title = usePlayerStore((state) => state.title);
+    const artist = usePlayerStore((state) => state.artist);
 
     const handlePlayPause = () => {
         if (isPlaying){
@@ -68,9 +71,20 @@ export function PlayerBar() {
       {/* Control Buttons */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       
-        {/* File load */}
-        <div style={{ flex: 1 }}>
-          
+        {/* Song info */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {currentSongPath ? (
+            <>
+              <span style={{ fontWeight: 'bold', fontSize: '16px', color: 'white' }}>
+                {title || currentSongPath}
+              </span>
+              <span style={{ fontSize: '13px', color: '#aaa' }}>
+                {artist || "Artist necunoscut"}
+              </span>
+            </>
+          ) : (
+            <span style={{ color: '#555', fontSize: '14px' }}>Nicio melodie</span>
+          )}
         </div>
 
         {/* Play/Pause */}
