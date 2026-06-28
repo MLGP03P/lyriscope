@@ -1,13 +1,13 @@
 use serde::Serialize;
 use lofty::probe::Probe;
 use lofty::tag::Accessor;
+use lofty::file::TaggedFileExt; 
 
 #[derive(Serialize)]
 pub struct SongMetadata {
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,
-
 }
 
 #[tauri::command]
@@ -22,7 +22,13 @@ fn read_metadata(path: String) -> Result<SongMetadata, String> {
         None => tagged_file.first_tag(),
     };
 
-    if let Some(tag) = tag{
+    let mut metadata = SongMetadata {
+        title: None,
+        artist: None,
+        album: None,
+    };
+
+    if let Some(tag) = tag {
         metadata.title = tag.title().map(|s| s.into_owned());
         metadata.artist = tag.artist().map(|s| s.into_owned());
         metadata.album = tag.album().map(|s| s.into_owned());
@@ -34,7 +40,7 @@ fn read_metadata(path: String) -> Result<SongMetadata, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init()) 
         .invoke_handler(tauri::generate_handler![read_metadata]) 
         .run(tauri::generate_context!())
         .expect("eroare la pornirea aplicatiei tauri");
