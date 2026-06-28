@@ -24,15 +24,6 @@ export function PlayerBar() {
         }
     };
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-
-        if (file){
-            audioService.loadSong(file);
-
-            audioService.play();
-        }
-    };
 
     const handleSeek= (event: React.ChangeEvent<HTMLInputElement>) => {
         const newTime = Number(event.target.value);
@@ -76,15 +67,10 @@ export function PlayerBar() {
 
       {/* Control Buttons */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        
+      
         {/* File load */}
         <div style={{ flex: 1 }}>
-          <input 
-            type="file" 
-            accept="audio/*" 
-            onChange={handleFileSelect} 
-            style={{ color: '#aaa', width: '220px' }}
-          />
+          
         </div>
 
         {/* Play/Pause */}
