@@ -15,7 +15,9 @@ audioElement.addEventListener('timeupdate', () => {
         let newActiveIndex = -1;
 
         for(let i = lyricsLines.length -1; i>=0; i--){
-            if (currentTime >= lyricsLines[i].time){
+            const offsetMs = useLyricsStore.getState().offsetMs;
+            const adjustedLyricTime = lyricsLines[i].time + (offsetMs /1000);
+            if (currentTime >= adjustedLyricTime){
                 newActiveIndex = i;
                 break;
             }

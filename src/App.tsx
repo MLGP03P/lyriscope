@@ -5,6 +5,7 @@ import { usePlayerStore } from './state/playerScore';
 import { LyricsDisplay } from './components/lyrics/LyricsDisplay';
 import { lyricsService } from './services/lyrics';
 import { useLyricsStore } from './state/lyricsStore';
+import { LyricsSettings } from './components/lyrics/LyricsSettings';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
@@ -86,9 +87,10 @@ function App() {
           🎵 Last played song: <strong style={{ color: 'white' }}>{recentSong}</strong>
         </div>
       )}
-      
+
       <LyricsDisplay />
       
+      <LyricsSettings />
       <PlayerBar />
 
     </div>
