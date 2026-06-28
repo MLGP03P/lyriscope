@@ -1,11 +1,29 @@
 import { usePlayerStore } from '../state/playerScore';
+import { useLyricsStore } from '../state/lyricsStore';
 
 const audioElement = new Audio();
 
 audioElement.volume = usePlayerStore.getState().volume;
 
 audioElement.addEventListener('timeupdate', () => {
-    usePlayerStore.getState().setCurrentTime(audioElement.currentTime);
+    const currentTime = audioElement.currentTime;
+
+    usePlayerStore.getState().setCurrentTime(currentTime);
+
+    const lyricsLines = useLyricsStore.getState().lines;
+    if (lyricsLines.length > 0) {
+        let newActiveIndex = -1;
+
+        for(let i = lyricsLines.length -1; i>=0; i--){
+            if (currentTime >= lyricsLines[i].time){
+                newActiveIndex = i;
+                break;
+            }
+        }
+        if(newActiveIndex !== useLyricsStore.getState().activeLineIndex){
+            useLyricsStore.getState().setActiveLine(newActiveIndex);
+        }
+    }
 });
 
 

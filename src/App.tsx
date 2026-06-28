@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { PlayerBar } from './components/player/PlayerBar';
 import { audioService } from './services/audio';
 import { usePlayerStore } from './state/playerScore';
+import { LyricsDisplay } from './components/lyrics/LyricsDisplay';
+import { lyricsService } from './services/lyrics';
+import { useLyricsStore } from './state/lyricsStore';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
@@ -28,8 +31,19 @@ function App() {
     
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      audioService.loadSong(file);
-      audioService.play();
+      if(file.name.toLowerCase().endsWith('.lrc')){
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result as string;
+          const parsedLines = lyricsService.parseLRC(text);
+          useLyricsStore.getState().setLyrics(parsedLines);
+        };
+        reader.readAsText(file);
+      } else{
+        audioService.loadSong(file);
+        audioService.play();
+        useLyricsStore.getState().resetLyrics();
+      }
     }
   };
 
@@ -72,6 +86,8 @@ function App() {
           🎵 Last played song: <strong style={{ color: 'white' }}>{recentSong}</strong>
         </div>
       )}
+      
+      <LyricsDisplay />
       
       <PlayerBar />
 
