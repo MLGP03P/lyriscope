@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlayerBar } from './components/player/PlayerBar';
 import { audioService } from './services/audio';
 import { usePlayerStore } from './state/playerStore';
@@ -7,103 +7,89 @@ import { lyricsService } from './services/lyrics';
 import { useLyricsStore } from './state/lyricsStore';
 import { LyricsSettings } from './components/lyrics/LyricsSettings';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
-  
   const recentSong = usePlayerStore((state) => state.recentSong);
   const currentSongPath = usePlayerStore((state) => state.currentSongPath);
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsDragging(true);
-    } else if (e.type === "dragleave") {
-      setIsDragging(false);
-    }
-  };
+  useEffect(() => {
+    // Ne abonăm la motorul nativ (care acum e pornit!)
+    const unlistenPromise = getCurrentWindow().onDragDropEvent((event) => {
+      // 1. Radar absolut: Printăm orice mișcare face mouse-ul tău cu fișierul
+      console.log("🚨 EVENIMENT NATIV:", event.payload);
+      
+      const payload = event.payload as any;
 
-  // drop function
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      if(file.name.toLowerCase().endsWith('.lrc')){
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const text = event.target?.result as string;
-          const parsedLines = lyricsService.parseLRC(text);
-          useLyricsStore.getState().setLyrics(parsedLines);
-        };
-        reader.readAsText(file);
-      } else{
-        audioService.loadSong(file);
-        audioService.play();
-        useLyricsStore.getState().resetLyrics();
+      if (payload.type === 'enter' || payload.type === 'over') {
+        setIsDragging(true);
+      } else if (payload.type === 'leave') {
+        setIsDragging(false);
+      } else if (payload.type === 'drop') {
+        setIsDragging(false);
+        
+        // 2. Aici se întâmplă magia!
+        console.log("📥 FIȘIER ARUNCAT (Drop)! Date primite:", payload);
 
-        const filePath = (file as any).path;
+        const filePath = payload.paths?.[0];
+        if (!filePath) {
+            console.error("🔴 Eroare: Tauri nu a trimis calea fișierului!");
+            return;
+        }
 
-        if(filePath) {
-          invoke('read_metadata', {path: filePath})
-          .then((metadata: any) => {
-            usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
-          })
-          .catch((err) => {
-            console.error('Error reading metadata:', err);
-          });
+        console.log("📂 Calea absolută extrasă este:", filePath);
+
+        if (filePath.toLowerCase().endsWith('.lrc')) {
+          invoke('read_lrc_file', { path: filePath })
+            .then((text: any) => {
+              const parsedLines = lyricsService.parseLRC(text);
+              useLyricsStore.getState().setLyrics(parsedLines);
+            })
+            .catch((err) => console.error("🔴 Eroare versuri:", err));
+        } else {
+          audioService.loadSong(filePath);
+          audioService.play();
+          useLyricsStore.getState().resetLyrics();
+
+          invoke('read_metadata', { path: filePath })
+            .then((metadata: any) => {
+              console.log("✅ Metadate primite de la Rust:", metadata);
+              usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
+            })
+            .catch((err) => console.error("🔴 Eroare metadate Rust:", err));
         }
       }
-    }
-  };
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
 
   return (
-    <div 
-      onDragEnter={handleDrag}
-      onDragLeave={handleDrag}
-      onDragOver={handleDrag}
-      onDrop={handleDrop}
-      style={{ 
+    <div style={{ 
         height: '100vh', 
         backgroundColor: isDragging ? '#1a1a1a' : '#0a0a0a', 
         color: 'white', 
         fontFamily: 'sans-serif',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         transition: 'all 0.2s ease',
         border: isDragging ? '3px dashed #7B2CFF' : '3px solid transparent',
         boxSizing: 'border-box'
     }}>
       
-      <h1>Lyriscope</h1>
-      <p style={{ color: '#888', marginBottom: '10px' }}>
-        {isDragging ? 'Elibereaza melodia aici...' : 'Trage o melodie oriunde in fereastra pentru a o reda.'}
-      </p>
+      <LyricsSettings />
+      <LyricsDisplay />
 
-      {/* shows the last song if no song is currently playing */}
+      {/*message for when the screen is empty*/}
       {!currentSongPath && recentSong && (
-        <div style={{ 
-          marginTop: '20px', 
-          padding: '10px 20px', 
-          backgroundColor: '#181818', 
-          borderRadius: '8px',
-          border: '1px solid #333',
-          fontSize: '14px',
-          color: '#aaa'
-        }}>
-          🎵 Last played song: <strong style={{ color: 'white' }}>{recentSong}</strong>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', padding: '10px 20px', backgroundColor: '#181818', borderRadius: '8px', border: '1px solid #333', fontSize: '14px', color: '#aaa', zIndex: 10 }}>
+          🎵 Last song played: <strong style={{ color: 'white' }}>{recentSong}</strong>
         </div>
       )}
-
-      <LyricsDisplay />
       
-      <LyricsSettings />
       <PlayerBar />
 
     </div>

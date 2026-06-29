@@ -1,7 +1,12 @@
 import { usePlayerStore } from '../state/playerStore';
 import { useLyricsStore } from '../state/lyricsStore';
+import {convertFileSrc } from '@tauri-apps/api/core';
 
 const audioElement = new Audio();
+// Radar pentru erori de redare!
+audioElement.addEventListener('error', () => {
+  console.error("🔴 Eroare Motor Audio! Cod:", audioElement.error?.code, "Mesaj:", audioElement.error?.message);
+});
 
 audioElement.volume = usePlayerStore.getState().volume;
 
@@ -68,10 +73,12 @@ export const audioService ={
         usePlayerStore.getState().setVolume(volume);
     },
 
-    loadSong: (file: File) => {
-        const objectUrl = URL.createObjectURL(file);
-        audioElement.src = objectUrl;
+    loadSong: (path: string) => {
+        const assetUrl = convertFileSrc(path);
+        console.log("🔗 4. Link-ul sigur generat pentru player este:", assetUrl);
+        audioElement.src = assetUrl;
         audioElement.load();
-        usePlayerStore.getState().setCurrentSong(file.name);
+        const fileName = path.split(/[/\\]/).pop() || "Song";
+        usePlayerStore.getState().setCurrentSong(fileName);
     }
 };
