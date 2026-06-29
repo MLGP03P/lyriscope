@@ -15,11 +15,8 @@ function App() {
   const currentSongPath = usePlayerStore((state) => state.currentSongPath);
 
   useEffect(() => {
-    // Ne abonăm la motorul nativ (care acum e pornit!)
     const unlistenPromise = getCurrentWindow().onDragDropEvent((event) => {
-      // 1. Radar absolut: Printăm orice mișcare face mouse-ul tău cu fișierul
-      console.log("🚨 EVENIMENT NATIV:", event.payload);
-      
+
       const payload = event.payload as any;
 
       if (payload.type === 'enter' || payload.type === 'over') {
@@ -29,16 +26,10 @@ function App() {
       } else if (payload.type === 'drop') {
         setIsDragging(false);
         
-        // 2. Aici se întâmplă magia!
-        console.log("📥 FIȘIER ARUNCAT (Drop)! Date primite:", payload);
 
         const filePath = payload.paths?.[0];
-        if (!filePath) {
-            console.error("🔴 Eroare: Tauri nu a trimis calea fișierului!");
-            return;
-        }
 
-        console.log("📂 Calea absolută extrasă este:", filePath);
+
 
         if (filePath.toLowerCase().endsWith('.lrc')) {
           invoke('read_lrc_file', { path: filePath })
@@ -46,18 +37,24 @@ function App() {
               const parsedLines = lyricsService.parseLRC(text);
               useLyricsStore.getState().setLyrics(parsedLines);
             })
-            .catch((err) => console.error("🔴 Eroare versuri:", err));
+            .catch((err) => console.error("🔴 lyrics error:", err));
         } else {
           audioService.loadSong(filePath);
           audioService.play();
           useLyricsStore.getState().resetLyrics();
 
+          const tempId = filePath.split(/[/\\]/).pop() || "Song";
+          useLyricsStore.getState().setCurrentSongId(tempId);
+
           invoke('read_metadata', { path: filePath })
             .then((metadata: any) => {
-              console.log("✅ Metadate primite de la Rust:", metadata);
+              console.log("✅ Metadata:", metadata);
               usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
+              
+              const finalId = `${metadata.artist || 'Unknown'} - ${metadata.title || tempId}`;
+              useLyricsStore.getState().setCurrentSongId(finalId);
             })
-            .catch((err) => console.error("🔴 Eroare metadate Rust:", err));
+            .catch((err) => console.error("🔴 Metadata error:", err));
         }
       }
     });
@@ -77,16 +74,35 @@ function App() {
         flexDirection: 'column',
         transition: 'all 0.2s ease',
         border: isDragging ? '3px dashed #7B2CFF' : '3px solid transparent',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        position: 'relative'
     }}>
       
+      <div style={{ 
+        position: 'absolute', 
+        top: '25px', 
+        left: '30px', 
+        zIndex: 50,
+        pointerEvents: 'none'
+      }}>
+        <h1 style={{ 
+          margin: 0, 
+          fontSize: '14px', 
+          letterSpacing: '3px', 
+          color: '#444',
+          textTransform: 'uppercase',
+          fontWeight: 'bold'
+        }}>
+          Lyriscope
+        </h1>
+      </div>
+
       <LyricsSettings />
       <LyricsDisplay />
 
-      {/*message for when the screen is empty*/}
       {!currentSongPath && recentSong && (
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', padding: '10px 20px', backgroundColor: '#181818', borderRadius: '8px', border: '1px solid #333', fontSize: '14px', color: '#aaa', zIndex: 10 }}>
-          🎵 Last song played: <strong style={{ color: 'white' }}>{recentSong}</strong>
+          🎵 Last played song: <strong style={{ color: 'white' }}>{recentSong}</strong>
         </div>
       )}
       

@@ -22,7 +22,9 @@ export function LyricsDisplay() {
       overflow: 'hidden',
       padding: '40px',
       width: '100%',
-      marginBottom: '100px' 
+      marginBottom: '100px',
+      boxSizing: 'border-box',
+      height: 'calc(100vh - 200px)', 
     }}>
       {lines.map((line, index) => {
         const isActive = index === activeLineIndex;
@@ -34,13 +36,14 @@ export function LyricsDisplay() {
         return (
           <p key={index} style={{
             fontSize: isActive ? '48px' : '28px',
-            color: isActive ? '#ffffff' : '#888888',
+            color: isActive ? '#ffffff' : '#666666',
             opacity: isActive ? 1 : Math.max(0, 1 - (distance * 0.3)),
-            transition: 'all 0.4s ease',
+            transition: 'all 0.35s cubic-bezier(0.4, 2, 0.2, 1)',
             textAlign: 'center',
             margin: isActive ? '20px 0' : '10px 0',
             fontWeight: isActive ? 'bold' : 'normal',
-            textShadow: isActive ? '0 0 20px rgba(255,255,255,0.3)' : 'none'
+            textShadow: isActive ? '0 0 20px rgba(255,255,255,0.3)' : 'none',
+            maxWidth: '800px'
           }}>
             {line.text}
           </p>
