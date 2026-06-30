@@ -13,6 +13,7 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const recentSong = usePlayerStore((state) => state.recentSong);
   const currentSongPath = usePlayerStore((state) => state.currentSongPath);
+  const coverUrl = usePlayerStore((state) => state.coverUrl);
 
   useEffect(() => {
     const unlistenPromise = getCurrentWindow().onDragDropEvent((event) => {
@@ -50,6 +51,15 @@ function App() {
             .then((metadata: any) => {
               console.log("✅ Metadata:", metadata);
               usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
+
+              if (metadata.picture && metadata.mime_type) {
+                const uint8Array = new Uint8Array(metadata.picture);
+                const blob = new Blob([uint8Array], {type: metadata.mime_type});
+                const url = URL.createObjectURL(blob);
+                usePlayerStore.getState().setCoverUrl(url);
+              } else {
+                usePlayerStore.getState().setCoverUrl(null);
+              }
               
               const finalId = `${metadata.artist || 'Unknown'} - ${metadata.title || tempId}`;
               useLyricsStore.getState().setCurrentSongId(finalId);
@@ -75,8 +85,20 @@ function App() {
         transition: 'all 0.2s ease',
         border: isDragging ? '3px dashed #7B2CFF' : '3px solid transparent',
         boxSizing: 'border-box',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'hidden'
     }}>
+
+      <div style={{
+        position: 'absolute',
+        top: -50, left: -50, right: -50, bottom: -50, 
+        backgroundImage: coverUrl ? `url(${coverUrl})` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        filter: 'blur(40px) brightness(0.25)', // Blur extrem și întunecat pentru contrastul versurilor
+        zIndex: 0, 
+        transition: 'background-image 1s ease-in-out', 
+      }} />
       
       <div style={{ 
         position: 'absolute', 

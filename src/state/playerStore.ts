@@ -11,6 +11,7 @@ interface PlayerState {
 
   title: string | null;
   artist: string | null;
+  coverUrl: string | null;
   
   setIsPlaying: (isPlaying: boolean) => void;
   setVolume: (volume: number) => void;
@@ -19,6 +20,7 @@ interface PlayerState {
   setCurrentSong: (path: string) => void;
 
   setMetadata: (title: string | null, artist: string | null) => void;
+  setCoverUrl: (url: string | null) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -33,6 +35,7 @@ export const usePlayerStore = create<PlayerState>()(
 
       title: null,
       artist: null,
+      coverUrl: null,
 
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       setVolume: (volume) => set({ volume }),
@@ -45,9 +48,11 @@ export const usePlayerStore = create<PlayerState>()(
         isPlaying: true,
 
         title: null,
-        artist: null
+        artist: null,
+        coverUrl: null
       }),
       setMetadata: (title, artist) => set({ title, artist }),
+      setCoverUrl: (url) => set({ coverUrl: url }),
     }),
     {
       name: 'lyriscope-storage',

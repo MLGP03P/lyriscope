@@ -8,6 +8,8 @@ pub struct SongMetadata {
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,
+    picture: Option<Vec<u8>>,
+    mime_type: Option<String>,
 }
 
 #[tauri::command]
@@ -26,12 +28,23 @@ fn read_metadata(path: String) -> Result<SongMetadata, String> {
         title: None,
         artist: None,
         album: None,
+        picture: None,
+        mime_type: None,
     };
 
     if let Some(tag) = tag {
         metadata.title = tag.title().map(|s| s.into_owned());
         metadata.artist = tag.artist().map(|s| s.into_owned());
         metadata.album = tag.album().map(|s| s.into_owned());
+
+        if let Some(pic) = tag.pictures().first() {
+            metadata.picture = Some(pic.data().to_vec());
+            metadata.mime_type = Some(
+                pic.mime_type()
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_else(|| "image/jpeg".to_string())
+            );
+        }
     }
 
     Ok(metadata)
