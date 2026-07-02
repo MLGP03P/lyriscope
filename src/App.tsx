@@ -77,7 +77,7 @@ function App() {
   return (
     <div style={{ 
         height: '100vh',
-        width: '100vw', 
+        width: '100%', 
         backgroundColor: isDragging ? '#1a1a1a' : '#0a0a0a', 
         color: 'white', 
         fontFamily: 'sans-serif',
@@ -129,7 +129,10 @@ function App() {
         </div>
       )}
       
-      <PlayerBar />
+
+      <div style={{ position:'relative', zIndex: 50, width: '100%'}}>
+        <PlayerBar />
+      </div>
 
     </div>
   );

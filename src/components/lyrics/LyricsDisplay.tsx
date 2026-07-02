@@ -23,7 +23,6 @@ export function LyricsDisplay() {
       padding: '20px',
       width: '100%',
       boxSizing: 'border-box',
-      height: 'calc(100vh - 100px)',
       position: 'relative',
       zIndex: 10
     }}>
