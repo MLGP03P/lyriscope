@@ -76,7 +76,8 @@ function App() {
 
   return (
     <div style={{ 
-        height: '100vh', 
+        height: '100vh',
+        width: '100vw', 
         backgroundColor: isDragging ? '#1a1a1a' : '#0a0a0a', 
         color: 'white', 
         fontFamily: 'sans-serif',
@@ -95,7 +96,7 @@ function App() {
         backgroundImage: coverUrl ? `url(${coverUrl})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        filter: 'blur(40px) brightness(0.25)', // Blur extrem și întunecat pentru contrastul versurilor
+        filter: 'blur(40px) brightness(0.25)',
         zIndex: 0, 
         transition: 'background-image 1s ease-in-out', 
       }} />

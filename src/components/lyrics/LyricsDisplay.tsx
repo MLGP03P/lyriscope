@@ -35,22 +35,22 @@ export function LyricsDisplay() {
 
         return (
           <p key={index} style={{
-            fontSize: '28px',
+            fontSize: isActive ? '42px' : '26px',
             color: isActive ? '#ffffff' : '#888888',
             opacity: isActive ? 1 : Math.max(0.1, 1 - (distance * 0.3)),
+            transform: 'translateZ(0)', 
             
-            transform: isActive ? 'scale(1.6)' : 'scale(1)',
-            transformOrigin: 'center center',
-            
-            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             textAlign: 'center',
-            margin: isActive ? '20px 0' : '10px 0',
-            lineHeight: '1.2',
+            margin: isActive ? '16px 0' : '8px 0',
+            lineHeight: '1.3',
             fontWeight: 'bold',
-            textShadow: isActive ? '0 0 25px rgba(255,255,255,0.4)' : 'none',
-            width: '100%',
+            textShadow: isActive ? '0 0 25px rgba(255,255,255,0.5)' : 'none',
+            
+            width: '90%',
             maxWidth: '800px',
-            willChange: 'transform, opacity'
+            wordWrap: 'break-word',
+            willChange: 'font-size, opacity, text-shadow'
           }}>
             {line.text}
           </p>
