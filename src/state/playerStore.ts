@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware'; 
 
+
+export interface HistoryItem{
+  path: string;
+  title: string;
+  artist: string;
+}
 interface PlayerState {
   isPlaying: boolean;
   volume: number;
@@ -13,6 +19,8 @@ interface PlayerState {
   artist: string | null;
   coverUrl: string | null;
   
+  history: HistoryItem[];
+
   setIsPlaying: (isPlaying: boolean) => void;
   setVolume: (volume: number) => void;
   setCurrentTime: (time: number) => void;
@@ -21,6 +29,8 @@ interface PlayerState {
 
   setMetadata: (title: string | null, artist: string | null) => void;
   setCoverUrl: (url: string | null) => void;
+
+  addToHistory: (item: HistoryItem) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -36,6 +46,7 @@ export const usePlayerStore = create<PlayerState>()(
       title: null,
       artist: null,
       coverUrl: null,
+      history: [],
 
       setIsPlaying: (isPlaying) => set({ isPlaying }),
       setVolume: (volume) => set({ volume }),
@@ -53,13 +64,19 @@ export const usePlayerStore = create<PlayerState>()(
       }),
       setMetadata: (title, artist) => set({ title, artist }),
       setCoverUrl: (url) => set({ coverUrl: url }),
+
+      addToHistory: (item) => set((state) => {
+        const filtered = state.history.filter((s) => s.path !== item.path);
+        return { history: [item, ...filtered].slice(0, 10)};
+      }),
     }),
+
     {
       name: 'lyriscope-storage',
       storage: createJSONStorage(() => localStorage), 
       partialize: (state) => ({ 
         volume: state.volume, 
-        recentSong: state.recentSong 
+        history: state.history,
       }),
     }
   )

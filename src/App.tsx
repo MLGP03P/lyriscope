@@ -8,6 +8,7 @@ import { useLyricsStore } from './state/lyricsStore';
 import { LyricsSettings } from './components/lyrics/LyricsSettings';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { LibrarySidebar } from './components/library/LibrarySidebar';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
@@ -61,8 +62,14 @@ function App() {
                 usePlayerStore.getState().setCoverUrl(null);
               }
               
-              const finalId = `${metadata.artist || 'Unknown'} - ${metadata.title || tempId}`;
+              const finalId = `${metadata.artist || 'Unknown Artist'} - ${metadata.title || tempId}`;
               useLyricsStore.getState().setCurrentSongId(finalId);
+
+              usePlayerStore.getState().addToHistory({
+                path: filePath,
+                title: metadata.title || tempId,
+                artist: metadata.artist || "Unknown Artist"
+              });
             })
             .catch((err) => console.error("🔴 Metadata error:", err));
         }
@@ -101,10 +108,12 @@ function App() {
         transition: 'background-image 1s ease-in-out', 
       }} />
       
+      <LibrarySidebar />
+
       <div style={{ 
         position: 'absolute', 
-        top: '25px', 
-        left: '30px', 
+        top: '33px', 
+        left: '70px', 
         zIndex: 50,
         pointerEvents: 'none'
       }}>
