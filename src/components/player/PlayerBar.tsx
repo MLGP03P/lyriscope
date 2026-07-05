@@ -48,7 +48,7 @@ export function PlayerBar() {
       backgroundColor: '#181818', 
       color: 'white',
       display: 'flex', 
-      flexDirection: 'column', // Așezăm elementele unul sub altul (bara de progres sus, butoanele jos)
+      flexDirection: 'column', 
       gap: '15px',
       borderTop: '1px solid #333'
     }}>
@@ -76,10 +76,10 @@ export function PlayerBar() {
           {currentSongPath ? (
             <>
               <span style={{ fontWeight: 'bold', fontSize: '16px', color: 'white' }}>
-                {title || currentSongPath}
+                {title || currentSongPath?.split(/[/\\]/).pop() || "Melodie"} 
               </span>
               <span style={{ fontSize: '13px', color: '#aaa' }}>
-                {artist || "Artist necunoscut"}
+                {artist || "Unknown Artist"}
               </span>
             </>
           ) : (

@@ -59,7 +59,14 @@ fn read_lrc_file(path: String) -> Result<String, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init()) 
-        .invoke_handler(tauri::generate_handler![read_metadata, read_lrc_file]) 
+        .invoke_handler(tauri::generate_handler![read_metadata, read_lrc_file, save_lrc_file]) 
         .run(tauri::generate_context!())
         .expect("eroare la pornirea aplicatiei tauri");
+}
+#[tauri::command]
+fn save_lrc_file(song_path: String, lrc_content: String) -> Result<(), String> {
+    let mut path = std::path::PathBuf::from(song_path);
+    path.set_extension("lrc");
+
+    std::fs::write(&path, lrc_content).map_err(|e| e.to_string())
 }

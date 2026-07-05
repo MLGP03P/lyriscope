@@ -3,9 +3,8 @@ import { useLyricsStore } from '../state/lyricsStore';
 import {convertFileSrc } from '@tauri-apps/api/core';
 
 const audioElement = new Audio();
-// Radar pentru erori de redare!
 audioElement.addEventListener('error', () => {
-  console.error("🔴 Eroare Motor Audio! Cod:", audioElement.error?.code, "Mesaj:", audioElement.error?.message);
+  console.error("🔴 Audio Player Error! Code:", audioElement.error?.code, "Message:", audioElement.error?.message);
 });
 
 audioElement.volume = usePlayerStore.getState().volume;
@@ -52,33 +51,33 @@ audioElement.addEventListener('ended', () => {
     usePlayerStore.getState().setIsPlaying(false);
 });
 
-export const audioService ={
-    play: async () =>{
-        await audioElement.play();
-        usePlayerStore.getState().setIsPlaying(true);
-    },
+export const audioService = {
+  loadSong: (path: string) => {
+    const assetUrl = convertFileSrc(path);
+    audioElement.src = assetUrl;
+    audioElement.load();
+    
 
-    pause: () => {
-        audioElement.pause();
-        usePlayerStore.getState().setIsPlaying(false);
-    },
+    usePlayerStore.getState().setCurrentSong(path);
+  },
 
-    seek: (time: number) => {
-        audioElement.currentTime=time;
-        usePlayerStore.getState().setCurrentTime(time);
-    },
+  play: () => {
+    audioElement.play()
+      .then(() => usePlayerStore.getState().setIsPlaying(true))
+      .catch((err) => console.error("🔴 Playback Error:", err));
+  },
 
-    setVolume: (volume: number) => {
-        audioElement.volume = volume;
-        usePlayerStore.getState().setVolume(volume);
-    },
+  pause: () => {
+    audioElement.pause();
+    usePlayerStore.getState().setIsPlaying(false);
+  },
 
-    loadSong: (path: string) => {
-        const assetUrl = convertFileSrc(path);
-        console.log("🔗 4. Link-ul sigur generat pentru player este:", assetUrl);
-        audioElement.src = assetUrl;
-        audioElement.load();
-        const fileName = path.split(/[/\\]/).pop() || "Song";
-        usePlayerStore.getState().setCurrentSong(fileName);
-    }
+  seek: (time: number) => {
+    audioElement.currentTime = time;
+    usePlayerStore.getState().setCurrentTime(time);
+  },
+
+  setVolume: (volume: number) => {
+    audioElement.volume = volume;
+  }
 };

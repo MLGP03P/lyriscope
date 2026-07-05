@@ -3,6 +3,7 @@ import { usePlayerStore } from '../../state/playerStore';
 import { useLyricsStore } from '../../state/lyricsStore';
 import { audioService } from '../../services/audio';
 import { invoke } from '@tauri-apps/api/core';
+import { lyricsService } from '../../services/lyrics';
 
 export function LibrarySidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ export function LibrarySidebar() {
 
     const tempId = path.split(/[/\\]/).pop() || "Melodie";
 
+    // 1. Cerem Metadatele (Codul pe care îl aveai deja)
     invoke('read_metadata', { path })
       .then((metadata: any) => {
         usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
@@ -28,11 +30,22 @@ export function LibrarySidebar() {
           usePlayerStore.getState().setCoverUrl(null);
         }
         
-        const finalId = `${metadata.artist || 'Unknown'} - ${metadata.title || tempId}`;
+        const finalId = `${metadata.artist || 'Unknown Artist'} - ${metadata.title || tempId}`;
         useLyricsStore.getState().setCurrentSongId(finalId);
       })
-      .catch((err) => console.error("Error reading metadata:", err));
-      
+      .catch((err) => console.error("History metadata error:", err));
+
+    const lrcPath = path.substring(0, path.lastIndexOf('.')) + '.lrc';
+    
+    invoke('read_lrc_file', { path: lrcPath })
+      .then((text: any) => {
+        const parsedLines = lyricsService.parseLRC(text);
+        useLyricsStore.getState().setLyrics(parsedLines);
+      })
+      .catch(() => {
+        console.log("Could not find an associated .lrc file.");
+      });
+    
     setIsOpen(false);
   };
 
@@ -45,7 +58,7 @@ export function LibrarySidebar() {
           position: 'absolute', top: '23px', left: '30px', zIndex: 60,
           background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', outline: 'none'
         }}
-        title="Librărie"
+        title="Library"
       >
         ☰
       </button>
