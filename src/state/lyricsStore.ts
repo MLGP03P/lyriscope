@@ -16,6 +16,7 @@ interface LyricsState {
   currentSongId: string | null;
 
   blurAmount: number;
+  fontSizeModifier: number;
   
   setLyrics: (lines: LyricLine[]) => void;
   setActiveLine: (index: number) => void;
@@ -24,6 +25,7 @@ interface LyricsState {
   setOffsetMs: (offset: number) => void;
   setCurrentSongId: (id: string | null) => void;
   setBlurAmount: (amount: number) => void;
+  setFontSizeModifier: (modifier: number) => void;
 }
 
 export const useLyricsStore = create<LyricsState>()(
@@ -35,6 +37,7 @@ export const useLyricsStore = create<LyricsState>()(
       savedOffsets: {},
       currentSongId: null,
       blurAmount: 60,
+      fontSizeModifier: 1.0,
       setLyrics: (lines) => set({ lines }),
       setActiveLine: (index) => set({ activeLineIndex: index }),
       
@@ -64,11 +67,12 @@ export const useLyricsStore = create<LyricsState>()(
       },
 
       setBlurAmount: (blurAmount) => set({ blurAmount }),
+      setFontSizeModifier: (fontSizeModifier) => set({ fontSizeModifier }),
     }),
     {
       name: 'lyriscope-lyrics-settings',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ savedOffsets: state.savedOffsets, blurAmount: state.blurAmount }), 
+      partialize: (state) => ({ savedOffsets: state.savedOffsets, blurAmount: state.blurAmount, fontSizeModifier: state.fontSizeModifier }),
     }
   )
 );

@@ -9,6 +9,9 @@ export function LyricsSettings() {
   const blurAmount = useLyricsStore((state) => state.blurAmount);
   const setBlurAmount = useLyricsStore((state) => state.setBlurAmount);
 
+  const fontSizeModifier = useLyricsStore((state) => state.fontSizeModifier);
+  const setFontSizeModifier = useLyricsStore((state) => state.setFontSizeModifier);
+
   return (
     <div style={{ position: 'relative' }}>
       {/* menu button */}
@@ -90,6 +93,23 @@ export function LyricsSettings() {
             <span style={{ fontSize: '10px', color: '#666', textAlign: 'center' }}>
               (0 = Clear, 120 = Extreme)
             </span>
+          </div>
+
+          {/* Lyrics Size */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '12px', color: '#aaa', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Lyrics Size</span>
+              <span style={{ color: '#7B2CFF' }}>{Math.round(fontSizeModifier * 100)}%</span>
+            </label>
+            <input 
+              type="range" 
+              min="0.7"
+              max="1.5"
+              step="0.05"
+              value={fontSizeModifier}
+              onChange={(e) => setFontSizeModifier(Number(e.target.value))}
+              style={{ width: '100%', accentColor: '#7B2CFF', cursor: 'pointer' }}
+            />
           </div>
 
         </div>

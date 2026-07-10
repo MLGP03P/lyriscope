@@ -3,6 +3,7 @@ import { useLyricsStore } from '../../state/lyricsStore';
 export function LyricsDisplay() {
   const lines = useLyricsStore((state) => state.lines);
   const activeLineIndex = useLyricsStore((state) => state.activeLineIndex);
+  const fontSizeModifier = useLyricsStore((state) => state.fontSizeModifier);
 
   if (lines.length === 0) {
     return (
@@ -34,7 +35,7 @@ export function LyricsDisplay() {
 
         return (
           <p key={index} style={{
-            fontSize: isActive ? '42px' : '26px',
+            fontSize: isActive ? `${Math.round(42 * fontSizeModifier)}px` : `${Math.round(26 * fontSizeModifier)}px`,
             color: isActive ? '#ffffff' : '#888888',
             opacity: isActive ? 1 : Math.max(0.1, 1 - (distance * 0.3)),
             transform: 'translateZ(0)', 
