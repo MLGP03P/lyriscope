@@ -13,6 +13,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 function App() {
   const [isDragging, setIsDragging] = useState(false);
   const coverUrl = usePlayerStore((state) => state.coverUrl);
+  const blurAmount = useLyricsStore((state) => state.blurAmount);
 
   useEffect(() => {
     const unlistenPromise = getCurrentWindow().onDragDropEvent((event) => {
@@ -183,7 +184,7 @@ function App() {
         backgroundImage: coverUrl ? `url(${coverUrl})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        filter: 'blur(60px) brightness(0.25)', 
+        filter: `blur(${blurAmount}px) brightness(0.25)`, 
         zIndex: 0, 
         transition: 'background-image 1s ease-in-out',
         pointerEvents: 'none', 
