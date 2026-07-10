@@ -12,10 +12,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
-  const currentSongPath = usePlayerStore((state) => state.currentSongPath);
   const coverUrl = usePlayerStore((state) => state.coverUrl);
 
-  // EFECTUL 1: Sistemul de Drag & Drop Nativ
   useEffect(() => {
     const unlistenPromise = getCurrentWindow().onDragDropEvent((event) => {
       const payload = event.payload as any;
@@ -162,12 +160,24 @@ function App() {
         display: 'flex',
         flexDirection: 'column',
         transition: 'all 0.2s ease',
-        border: isDragging ? '3px dashed #7B2CFF' : '3px solid transparent',
+        outline: isDragging ? '3px dashed #7B2CFF' : 'none',
+        outlineOffset: '-3px',
         boxSizing: 'border-box',
         position: 'relative'
     }}>
       
-      {/* (Album Blur) */}
+      <style>{`
+        ::-webkit-scrollbar {
+          display: none;
+        }
+        body {
+          background-color: #0a0a0a;
+          margin: 0;
+          overflow: hidden;
+        }
+      `}</style>
+
+      {/* Album Art */}
       <div style={{
         position: 'absolute', top: -50, left: -50, right: -50, bottom: -50,
         backgroundImage: coverUrl ? `url(${coverUrl})` : 'none',
@@ -175,24 +185,28 @@ function App() {
         backgroundPosition: 'center',
         filter: 'blur(60px) brightness(0.25)', 
         zIndex: 0, 
-        transition: 'background-image 1s ease-in-out', 
+        transition: 'background-image 1s ease-in-out',
+        pointerEvents: 'none', 
       }} />
 
-      {/* Library */}
       <LibrarySidebar />
 
       {/* Title */}
-      <div style={{ position: 'absolute', top: '27px', left: '70px', zIndex: 50, pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: '33px', left: '70px', zIndex: 50, pointerEvents: 'none' }}>
         <h1 style={{ margin: 0, fontSize: '14px', letterSpacing: '3px', color: '#444', textTransform: 'uppercase', fontWeight: 'bold' }}>
           Lyriscope
         </h1>
       </div>
 
-      <LyricsSettings />
+      {/* Lyrics Settings */}
+      <div style={{ position: 'absolute', top: '-4px', right: '30px', zIndex: 60 }}>
+        <LyricsSettings />
+      </div>
+
       <LyricsDisplay />
       
       {/* Buttons */}
-      <div style={{ position: 'relative', zIndex: 50, width: '100%' }}>
+      <div style={{ position: 'relative', zIndex: 9999, width: '100%', flexShrink: 0, pointerEvents: 'auto' }}>
         <PlayerBar />
       </div>
 

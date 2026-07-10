@@ -114,8 +114,16 @@ export function PlayerBar() {
             max="1" 
             step="0.01" 
             value={volume} 
-            onChange={handleVolumeChange}
-            style={{ width: '100px', cursor: 'pointer' }}
+            onChange={(e) => {
+              const newVolume = parseFloat(e.target.value);
+              audioService.setVolume(newVolume);
+              usePlayerStore.getState().setVolume(newVolume);
+            }}
+            style={{
+              cursor: 'pointer',
+              accentColor: '#7B2CFF',
+              width: '100px'
+            }}
           />
         </div>
       </div>

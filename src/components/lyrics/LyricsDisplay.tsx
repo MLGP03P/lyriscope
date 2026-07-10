@@ -41,7 +41,7 @@ export function LyricsDisplay() {
             
             transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             textAlign: 'center',
-            margin: isActive ? '16px 0' : '8px 0',
+            margin: '10px 0',
             lineHeight: '1.3',
             fontWeight: 'bold',
             textShadow: isActive ? '0 0 25px rgba(255,255,255,0.5)' : 'none',
