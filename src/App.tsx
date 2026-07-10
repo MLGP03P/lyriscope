@@ -148,6 +148,50 @@ function App() {
     };
   }, []);
 
+
+  useEffect(() => {
+    (window as any).triggerGlobalSongLoad = (filePath: string) => {
+      console.log("🎵 Global song load triggered:", filePath);
+
+      audioService.loadSong(filePath);
+      audioService.play();
+      useLyricsStore.getState().resetLyrics();
+
+      const tempId = filePath.split(/[/\\]/).pop() || "Song"
+      useLyricsStore.getState().setCurrentSongId(tempId);
+
+      invoke('read_metadata', {path: filePath})
+      .then((metadata: any) => {
+        usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
+
+        if(metadata.picture && metadata.mime_type) {
+          const uint8Array = new Uint8Array(metadata.picture);
+          const blob = new Blob([uint8Array], { type: metadata.mime_type });
+          const url = URL.createObjectURL(blob);
+          usePlayerStore.getState().setCoverUrl(url);
+        } else {
+          usePlayerStore.getState().setCoverUrl(null);
+        }
+
+        const finalId = `${metadata.artist || 'Unknown Artist'} - ${metadata.title || tempId}`;
+        useLyricsStore.getState().setCurrentSongId(finalId);
+      })
+
+      .catch((err) => console.error("🔴 Rust metadata error:", err));
+
+      const lrcPath= filePath.substring(0, filePath.lastIndexOf('.')) + '.lrc';
+      invoke('read_lrc_file', { path: lrcPath })
+      .then((text: any) => {
+        const parsedLines = lyricsService.parseLRC(text);
+        useLyricsStore.getState().setLyrics(parsedLines);
+      })
+      .catch((err) => console.error("🔴 Rust LRC error:", err));
+    };
+    return() => {
+      delete (window as any).triggerGlobalSongLoad;
+    };
+  }, []);
+
   return (
     <div style={{ 
         height: '100vh', 

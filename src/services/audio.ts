@@ -48,7 +48,16 @@ audioElement.addEventListener('canplay', () => {
 });
 
 audioElement.addEventListener('ended', () => {
-    usePlayerStore.getState().setIsPlaying(false);
+  console.log("🎵 Song ended");
+  
+  const store = usePlayerStore.getState();
+  
+  if (store.currentQueueIndex < store.queue.length - 1) {
+    store.playNext();
+  } else {
+    store.setIsPlaying(false);
+    store.setCurrentTime(0);
+  }
 });
 
 export const audioService = {
