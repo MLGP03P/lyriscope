@@ -26,11 +26,15 @@ function App() {
       } else if (payload.type === 'drop') {
         setIsDragging(false);
         
-        const filePath = payload.paths?.[0];
-        if (!filePath) return;
+        const filePaths = payload.paths as string[];
+        if (!filePaths || filePaths.length === 0) return;
 
-        if (filePath.toLowerCase().endsWith('.lrc')) {
-          console.log("📜 Lyrics file loaded manually:", filePath);
+        const lrcPaths = filePaths.filter(p => p.toLowerCase().endsWith('.lrc'));
+        const audioPaths = filePaths.filter(p => !p.toLowerCase().endsWith('.lrc'));
+
+        if (lrcPaths.length > 0 && audioPaths.length === 0) {
+          const filePath = lrcPaths[0];
+          console.log("📜 Lyric file uploaded:", filePath);
           
           invoke('read_lrc_file', { path: filePath })
             .then((text: any) => {
@@ -39,52 +43,28 @@ function App() {
 
               const currentAudioPath = usePlayerStore.getState().currentSongPath;
               if (currentAudioPath && (currentAudioPath.includes('/') || currentAudioPath.includes('\\'))) {
-                console.log("📦 Song detected. Automatically packaging lyrics next to it...");
-                
-                invoke('save_lrc_file', { 
-                  songPath: currentAudioPath, 
-                  lrcContent: text 
-                })
-                .then(() => console.log("✅ Lyrics saved successfully next to the current song."))
-                .catch((err) => console.error("🔴 Rust save error:", err));
+                invoke('save_lrc_file', { songPath: currentAudioPath, lrcContent: text })
+                .then(() => console.log("✅ Lyrics were successfully saved alongside the song."))
+                .catch((err) => console.error("🔴 Error saving lyrics:", err));
               }
             })
-            .catch((err) => console.error("🔴 Lyrics error:", err));
+            .catch((err) => console.error("🔴 Error reading lyrics:", err));
             
-        } else {
-          console.log("🎵 Song dropped:", filePath);
-          
-          audioService.loadSong(filePath);
-          audioService.play();
-          useLyricsStore.getState().resetLyrics();
-
-          const tempId = filePath.split(/[/\\]/).pop() || "Melodie";
-          useLyricsStore.getState().setCurrentSongId(tempId);
-
-          invoke('read_metadata', { path: filePath })
-            .then((metadata: any) => {
-              console.log("✅ Metadata:", metadata);
-              usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
-              
-              if (metadata.picture && metadata.mime_type) {
-                const uint8Array = new Uint8Array(metadata.picture);
-                const blob = new Blob([uint8Array], { type: metadata.mime_type });
-                const url = URL.createObjectURL(blob);
-                usePlayerStore.getState().setCoverUrl(url);
-              } else {
-                usePlayerStore.getState().setCoverUrl(null);
-              }
-              
-              const finalId = `${metadata.artist || 'Unknown Artist'} - ${metadata.title || tempId}`;
-              useLyricsStore.getState().setCurrentSongId(finalId);
-
-              usePlayerStore.getState().addToHistory({
-                path: filePath,
-                title: metadata.title || tempId,
-                artist: metadata.artist || "Unknown Artist",
-              });
-            })
-            .catch((err) => console.error("🔴 Rust metadata error:", err));
+        } 
+        else if (audioPaths.length > 0) {
+          const state = usePlayerStore.getState();
+          if (state.currentSongPath) {
+            console.log(`🎵 Added to queue: ${audioPaths.length} songs.`);
+            state.addToQueue(audioPaths);
+            // add a small notification or visual feedback to indicate that songs were added to the queue
+          } 
+          else {
+            console.log(`🎵 New playlist created! ${audioPaths.length} songs loaded.`);
+            state.setQueue(audioPaths, 0);
+            if ((window as any).triggerGlobalSongLoad) {
+              (window as any).triggerGlobalSongLoad(audioPaths[0]);
+            }
+          }
         }
       }
     });
@@ -175,6 +155,12 @@ function App() {
 
         const finalId = `${metadata.artist || 'Unknown Artist'} - ${metadata.title || tempId}`;
         useLyricsStore.getState().setCurrentSongId(finalId);
+
+        usePlayerStore.getState().addToHistory({
+          path: filePath,
+          title: metadata.title || tempId,
+          artist: metadata.artist || "Unknown Artist",
+        });
       })
 
       .catch((err) => console.error("🔴 Rust metadata error:", err));

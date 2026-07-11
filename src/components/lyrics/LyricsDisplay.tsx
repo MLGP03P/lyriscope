@@ -8,7 +8,7 @@ export function LyricsDisplay() {
   if (lines.length === 0) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444' }}>
-        <p>Trage un fișier .lrc aici pentru a adăuga versuri</p>
+        <p>Drag and drop an .lrc file here to add lyrics</p>
       </div>
     );
   }

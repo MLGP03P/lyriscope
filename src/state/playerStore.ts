@@ -36,6 +36,7 @@ interface PlayerState {
   addToHistory: (item: HistoryItem) => void;
 
   setQueue: (paths: string[], startIndex: number) => void;
+  addToQueue: (paths:string[]) => void;
   playNext: () => void;
   playPrevious: () => void;
 }
@@ -81,6 +82,9 @@ export const usePlayerStore = create<PlayerState>()(
       }),
 
       setQueue: (paths, startIndex) => set({ queue: paths, currentQueueIndex: startIndex }),
+      addToQueue: (paths) => set((state) => ({ 
+        queue: [...state.queue, ...paths] 
+      })),
 
       playNext: () => {
         const { queue, currentQueueIndex } = get();

@@ -2,21 +2,29 @@ import { useState } from 'react';
 import { usePlayerStore } from '../../state/playerStore';
 import { useLyricsStore } from '../../state/lyricsStore';
 import { audioService } from '../../services/audio';
-import { invoke } from '@tauri-apps/api/core';
 import { lyricsService } from '../../services/lyrics';
+import { invoke } from '@tauri-apps/api/core';
 
 export function LibrarySidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const history = usePlayerStore((state) => state.history);
+  
+  const queue = usePlayerStore((state) => state.queue);
+  const currentQueueIndex = usePlayerStore((state) => state.currentQueueIndex);
+  const getFileName = (path: string) => {
+    return path.split(/[/\\]/).pop() || "Melodie";
+  };
 
-  const playFromHistory = (path: string) => {
+  const playFromHistoryOrQueue = (path: string, indexInQueue?: number) => {
     audioService.loadSong(path);
     audioService.play();
     useLyricsStore.getState().resetLyrics();
 
-    const tempId = path.split(/[/\\]/).pop() || "Melodie";
+    const tempId = getFileName(path);
+    if (indexInQueue !== undefined) {
+      usePlayerStore.setState({ currentQueueIndex: indexInQueue });
+    }
 
-    // 1. Cerem Metadatele (Codul pe care îl aveai deja)
     invoke('read_metadata', { path })
       .then((metadata: any) => {
         usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
@@ -32,38 +40,44 @@ export function LibrarySidebar() {
         
         const finalId = `${metadata.artist || 'Unknown Artist'} - ${metadata.title || tempId}`;
         useLyricsStore.getState().setCurrentSongId(finalId);
+
+        // Adăugăm în istoric
+        usePlayerStore.getState().addToHistory({
+          path,
+          title: metadata.title || tempId,
+          artist: metadata.artist || "Unknown Artist"
+        });
       })
-      .catch((err) => console.error("History metadata error:", err));
+      .catch((err) => console.error("Error reading metadata:", err));
 
     const lrcPath = path.substring(0, path.lastIndexOf('.')) + '.lrc';
-    
     invoke('read_lrc_file', { path: lrcPath })
       .then((text: any) => {
         const parsedLines = lyricsService.parseLRC(text);
         useLyricsStore.getState().setLyrics(parsedLines);
       })
-      .catch(() => {
-        console.log("Could not find an associated .lrc file.");
-      });
-    
+      .catch(() => console.log("No .lrc file found automatically."));
+      
     setIsOpen(false);
   };
 
+  const upcomingQueue = queue.slice(currentQueueIndex + 1);
+
   return (
     <>
-      {/* Menu Button */}
+      {/* button */}
       <button 
         onClick={() => setIsOpen(true)}
         style={{
           position: 'absolute', top: '23px', left: '30px', zIndex: 60,
           background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer', outline: 'none'
         }}
-        title="Library"
+        title="Queue and History"
       >
         ☰
       </button>
 
-      {/* Menu Body */}
+      {/* background */}
       {isOpen && (
         <div 
           onClick={() => setIsOpen(false)}
@@ -71,10 +85,10 @@ export function LibrarySidebar() {
         />
       )}
 
-      {/* Side Panel that Slides In */}
+      {/* Sidebar */}
       <div style={{
-        position: 'fixed', top: 0, bottom: 0, left: isOpen ? 0 : '-300px',
-        width: '300px', backgroundColor: '#111', zIndex: 100,
+        position: 'fixed', top: 0, bottom: 0, left: isOpen ? 0 : '-320px',
+        width: '320px', backgroundColor: '#111', zIndex: 100,
         boxShadow: isOpen ? '10px 0 30px rgba(0,0,0,0.8)' : 'none',
         transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex', flexDirection: 'column',
@@ -82,38 +96,89 @@ export function LibrarySidebar() {
       }}>
         
         <div style={{ padding: '25px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '16px', letterSpacing: '2px', color: '#fff', textTransform: 'uppercase' }}>
-            History
+          <h2 style={{ margin: 0, fontSize: '14px', letterSpacing: '2px', color: '#fff', textTransform: 'uppercase' }}>
+            Queue and History
           </h2>
           <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>
             ✕
           </button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-          {history.length === 0 ? (
-            <p style={{ color: '#555', textAlign: 'center', marginTop: '30px', fontSize: '14px' }}>You haven't played any songs yet.</p>
-          ) : (
-            history.map((item, index) => (
-              <div 
-                key={index}
-                onClick={() => playFromHistory(item.path)}
-                style={{
-                  padding: '12px 15px', margin: '5px 0', backgroundColor: '#1a1a1a',
-                  borderRadius: '8px', cursor: 'pointer', transition: 'background-color 0.2s'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2a2a2a'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1a1a1a'}
-              >
-                <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {item.title}
-                </div>
-                <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px' }}>
-                  {item.artist}
-                </div>
+        {/* content section */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '15px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          
+          {/* Up next (queue) */}
+          <div>
+            <h3 style={{ margin: '0 0 10px 5px', fontSize: '11px', letterSpacing: '1px', color: '#7B2CFF', textTransform: 'uppercase', fontWeight: 'bold' }}>
+              Up Next ({upcomingQueue.length})
+            </h3>
+            {upcomingQueue.length === 0 ? (
+              <p style={{ color: '#444', margin: '5px 0 0 5px', fontSize: '13px' }}>No songs in queue.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {queue.map((path, index) => {
+                  if (index <= currentQueueIndex) return null;
+                  
+                  return (
+                    <div 
+                      key={index}
+                      onClick={() => playFromHistoryOrQueue(path, index)}
+                      style={{
+                        padding: '10px 12px', backgroundColor: '#16121e', border: '1px solid #251b35',
+                        borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#251b35';
+                        e.currentTarget.style.borderColor = '#7B2CFF';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#16121e';
+                        e.currentTarget.style.borderColor = '#251b35';
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {getFileName(path)}
+                      </div>
+                      <span style={{ fontSize: '10px', color: '#7B2CFF', textTransform: 'uppercase', fontWeight: 'bold' }}>Up Next</span>
+                    </div>
+                  );
+                })}
               </div>
-            ))
-          )}
+            )}
+          </div>
+
+          {/* history section */}
+          <div>
+            <h3 style={{ margin: '0 0 10px 5px', fontSize: '11px', letterSpacing: '1px', color: '#888', textTransform: 'uppercase', fontWeight: 'bold' }}>
+              History
+            </h3>
+            {history.length === 0 ? (
+              <p style={{ color: '#444', margin: '5px 0 0 5px', fontSize: '13px' }}>No song in history.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {history.map((item, index) => (
+                  <div 
+                    key={index}
+                    onClick={() => playFromHistoryOrQueue(item.path)}
+                    style={{
+                      padding: '10px 12px', backgroundColor: '#161616',
+                      borderRadius: '6px', cursor: 'pointer', transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#222'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#161616'}
+                  >
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {item.title}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      {item.artist}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </>

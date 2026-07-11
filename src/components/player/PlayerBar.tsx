@@ -19,6 +19,9 @@ export function PlayerBar() {
     const title = usePlayerStore((state) => state.title);
     const artist = usePlayerStore((state) => state.artist);
 
+    const playNext = usePlayerStore((state) => state.playNext);
+    const playPrevious = usePlayerStore((state) => state.playPrevious);
+
     const handlePlayPause = () => {
         if (isPlaying){
             audioService.pause();
@@ -76,34 +79,50 @@ export function PlayerBar() {
           {currentSongPath ? (
             <>
               <span style={{ fontWeight: 'bold', fontSize: '16px', color: 'white' }}>
-                {title || currentSongPath?.split(/[/\\]/).pop() || "Melodie"} 
+                {title || currentSongPath?.split(/[/\\]/).pop() || "Song"} 
               </span>
               <span style={{ fontSize: '13px', color: '#aaa' }}>
                 {artist || "Unknown Artist"}
               </span>
             </>
           ) : (
-            <span style={{ color: '#555', fontSize: '14px' }}>Nicio melodie</span>
+            <span style={{ color: '#555', fontSize: '14px' }}>No song playing</span>
           )}
         </div>
 
         {/* Play/Pause */}
-        <button 
-          onClick={handlePlayPause}
-          disabled={!currentSongPath}
-          style={{ 
-            padding: '12px 40px', 
-            cursor: currentSongPath ? 'pointer' : 'not-allowed',
-            backgroundColor: currentSongPath ? '#fff' : '#444',
-            color: currentSongPath ? '#000' : '#888',
-            border: 'none',
-            borderRadius: '50px',
-            fontWeight: 'bold',
-            fontSize: '16px'
-          }}
-        >
-          {isPlaying ? '⏸ Pause' : '▶️ Play'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <button 
+            onClick={playPrevious}
+            style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '20px', cursor: 'pointer', transition: 'color 0.2s' }}
+            onMouseOver={(e) => e.currentTarget.style.color = '#fff'}
+            onMouseOut={(e) => e.currentTarget.style.color = '#aaa'}
+            title="Previous Song"
+          >
+            ⏮
+          </button>
+
+          <button 
+            onClick={isPlaying ? () => audioService.pause() : () => audioService.play()}
+            style={{ 
+              padding: '10px 30px', borderRadius: '25px', border: 'none', 
+              backgroundColor: 'white', color: 'black', fontWeight: 'bold', 
+              cursor: 'pointer', fontSize: '16px' 
+            }}
+          >
+            {isPlaying ? '⏸ Pause' : '▶ Play'}
+          </button>
+
+          <button 
+            onClick={playNext}
+            style={{ background: 'none', border: 'none', color: '#aaa', fontSize: '20px', cursor: 'pointer', transition: 'color 0.2s' }}
+            onMouseOver={(e) => e.currentTarget.style.color = '#fff'}
+            onMouseOut={(e) => e.currentTarget.style.color = '#aaa'}
+            title="Next Song"
+          >
+            ⏭
+          </button>
+        </div>
 
         {/* Volume control */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px' }}>
