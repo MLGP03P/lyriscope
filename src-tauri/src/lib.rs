@@ -1,7 +1,7 @@
 use serde::Serialize;
 use lofty::probe::Probe;
 use lofty::tag::Accessor;
-use lofty::file::TaggedFileExt; 
+use lofty::file::TaggedFileExt;
 
 #[derive(Serialize)]
 pub struct SongMetadata {
@@ -55,13 +55,73 @@ fn read_lrc_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
+// Structura pentru o melodie din librărie
+#[derive(serde::Serialize)]
+pub struct LibrarySong {
+    path: String,
+    title: Option<String>,
+    artist: Option<String>,
+    album: Option<String>,
+    duration: Option<u64>,
+}
+
+// Comandă pentru a deschide fereastra nativă de selectare folder
+#[tauri::command]
+fn pick_folder() -> Option<String> {
+    rfd::FileDialog::new()
+        .pick_folder()
+        .map(|p| p.display().to_string())
+}
+
+use lofty::file::AudioFile;
+
+#[tauri::command]
+fn scan_folder(folder_path: String) -> Vec<LibrarySong> {
+    let mut songs = Vec::new();
+    let mut dirs_to_scan = vec![std::path::PathBuf::from(folder_path)];
+
+    while let Some(dir) = dirs_to_scan.pop() {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs_to_scan.push(path);
+                } else if path.is_file() {
+                    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+                    if matches!(ext.as_str(), "mp3" | "flac" | "wav" | "m4a" | "ogg") {
+                        let mut song = LibrarySong {
+                            path: path.to_string_lossy().to_string(),
+                            title: None,
+                            artist: None,
+                            album: None,
+                            duration: None,
+                        };
+
+
+                        if let Ok(tagged_file) = lofty::read_from_path(&path) {
+                            if let Some(tag) = tagged_file.primary_tag().or_else(|| tagged_file.first_tag()) {
+                                song.title = tag.title().map(|s| s.into_owned());
+                                song.artist = tag.artist().map(|s| s.into_owned());
+                                song.album = tag.album().map(|s| s.into_owned());
+                            }
+                            song.duration = Some(tagged_file.properties().duration().as_secs());
+                        }
+                        songs.push(song);
+                    }
+                }
+            }
+        }
+    }
+    songs
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init()) 
-        .invoke_handler(tauri::generate_handler![read_metadata, read_lrc_file, save_lrc_file]) 
+        .invoke_handler(tauri::generate_handler![read_metadata, read_lrc_file, save_lrc_file, pick_folder, scan_folder]) 
         .run(tauri::generate_context!())
-        .expect("eroare la pornirea aplicatiei tauri");
+        .expect("error while running tauri application");
 }
 #[tauri::command]
 fn save_lrc_file(song_path: String, lrc_content: String) -> Result<(), String> {
