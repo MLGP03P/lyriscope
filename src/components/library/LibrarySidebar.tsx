@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { usePlayerStore } from '../../state/playerStore';
 import { useLyricsStore } from '../../state/lyricsStore';
 import { useLibraryStore } from '../../state/libraryStore';
+import { useUiStore } from '../../state/uiStore';
 import { audioService } from '../../services/audio';
 import { lyricsService } from '../../services/lyrics';
 import { invoke } from '@tauri-apps/api/core';
 
 export function LibrarySidebar() {
+  const setCurrentPage = useUiStore((state) => state.setCurrentPage);
   const [isOpen, setIsOpen] = useState(false);
   const history = usePlayerStore((state) => state.history);
   const queue = usePlayerStore((state) => state.queue);
@@ -170,82 +172,24 @@ export function LibrarySidebar() {
             )}
           </div>
 
-          {/* SECTION 2: LOCAL LIBRARY */}
+          {/* SECTION 2: LIBRARY NAVIGATION */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 5px 10px 5px' }}>
-              <h3 style={{ margin: 0, fontSize: '11px', letterSpacing: '1px', color: '#888', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                Local Files ({librarySongs.length})
-              </h3>
-              
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {/* Butonul de ștergere a librăriei */}
-                <button 
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to clear your local library?')) {
-                      clearLibrary();
-                    }
-                  }}
-                  title="Clear Library"
-                  style={{ background: 'transparent', border: '1px solid #ff4444', color: '#ff4444', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}
-                >
-                  Clear
-                </button>
-
-                {/* Folder Scanning */}
-                <button 
-                  onClick={handleScanFolder}
-                  disabled={isScanning}
-                  style={{ background: 'transparent', border: '1px solid #444', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', cursor: isScanning ? 'wait' : 'pointer' }}
-                >
-                  {isScanning ? 'Scanning...' : '+ Add Folder'}
-                </button>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            {librarySongs.length > 0 && (
-              <input 
-                type="text"
-                placeholder="Search by title, artist or filename..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%', padding: '8px 12px', marginBottom: '12px', boxSizing: 'border-box',
-                  backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '6px',
-                  color: 'white', fontSize: '12px', outline: 'none'
-                }}
-              />
-            )}
-            
-            {filteredLibrary.length === 0 ? (
-              <p style={{ color: '#444', margin: '5px 0 0 5px', fontSize: '13px' }}>
-                {librarySongs.length === 0 ? "No local files scanned yet." : "No matching songs found."}
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {filteredLibrary.slice(0, 50).map((song, index) => (
-                  <div 
-                    key={`lib-${index}`}
-                    onClick={() => playSong(song.path)}
-                    style={{ padding: '10px 12px', backgroundColor: '#161616', borderRadius: '6px', cursor: 'pointer', transition: 'background-color 0.2s' }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#222'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#161616'}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {song.title || getFileName(song.path)}
-                    </div>
-                    <div style={{ fontSize: '11px', color: '#888', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {song.artist || "Unknown Artist"}
-                    </div>
-                  </div>
-                ))}
-                {filteredLibrary.length > 50 && (
-                  <div style={{ textAlign: 'center', fontSize: '11px', color: '#666', marginTop: '10px' }}>
-                    + {filteredLibrary.length - 50} more tracks
-                  </div>
-                )}
-              </div>
-            )}
+            <button
+              onClick={() => {
+                setCurrentPage('library');
+                setIsOpen(false); 
+              }}
+              style={{
+                width: '100%', padding: '12px', backgroundColor: '#7B2CFF', color: 'white',
+                border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
+                textTransform: 'uppercase', letterSpacing: '1px', fontSize: '12px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#621ad9'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#7B2CFF'}
+            >
+              Open Full Library
+            </button>
           </div>
 
           {/* SECTION 3: HISTORY */}

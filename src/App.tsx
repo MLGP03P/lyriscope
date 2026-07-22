@@ -6,12 +6,15 @@ import { LibrarySidebar } from './components/library/LibrarySidebar';
 import { audioService } from './services/audio';
 import { usePlayerStore } from './state/playerStore';
 import { useLyricsStore } from './state/lyricsStore';
+import { useUiStore } from './state/uiStore';
+import { LibraryPage } from './pages/LibraryPage';
 import { lyricsService } from './services/lyrics';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 function App() {
   const [isDragging, setIsDragging] = useState(false);
+  const currentPage = useUiStore((state) => state.currentPage);
   const coverUrl = usePlayerStore((state) => state.coverUrl);
   const blurAmount = useLyricsStore((state) => state.blurAmount);
 
@@ -230,11 +233,16 @@ function App() {
       </div>
 
       {/* Lyrics Settings */}
-      <div style={{ position: 'absolute', top: '-4px', right: '30px', zIndex: 60 }}>
-        <LyricsSettings />
-      </div>
-
-      <LyricsDisplay />
+      {currentPage === 'player' ? (
+        <>
+          <div style={{ position: 'absolute', top: '23px', right: '30px', zIndex: 60 }}>
+            <LyricsSettings />
+          </div>
+          <LyricsDisplay />
+        </>
+      ) : (
+        <LibraryPage />
+      )}
       
       {/* Buttons */}
       <div style={{ position: 'relative', zIndex: 9999, width: '100%', flexShrink: 0, pointerEvents: 'auto' }}>
