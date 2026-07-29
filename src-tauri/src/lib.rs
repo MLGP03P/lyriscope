@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde::Deserialize;
 use lofty::probe::Probe;
 use lofty::tag::Accessor;
 use lofty::file::TaggedFileExt;
@@ -10,6 +11,39 @@ pub struct SongMetadata {
     album: Option<String>,
     picture: Option<Vec<u8>>,
     mime_type: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct LrcLibResponse {
+    #[serde(rename = "syncedLyrics")]
+    synced_lyrics: Option<String>,
+    #[serde(rename = "plainLyrics")]
+    plain_lyrics: Option<String>,
+}
+
+#[tauri::command]
+async fn fetch_online_lyrics(title: String, artist: String) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    
+    let response = client.get("https://lrclib.net/api/get")
+        .query(&[("track_name", &title), ("artist_name", &artist)])
+        .send()
+        .await
+        .map_err(|e| format!("Network error: {}", e))?;
+
+    if response.status().is_success() {
+        let json_data: LrcLibResponse = response.json().await.map_err(|e| format!("JSON error: {}", e))?;
+        
+        if let Some(synced) = json_data.synced_lyrics {
+            return Ok(synced);
+        } else if let Some(plain) = json_data.plain_lyrics {
+            return Ok(plain);
+        } else {
+            return Err("Lyrics empty in response".to_string());
+        }
+    }
+
+    Err("Lyrics not found on LRCLIB".to_string())
 }
 
 #[tauri::command]
@@ -65,7 +99,6 @@ pub struct LibrarySong {
     duration: Option<u64>,
 }
 
-// Comandă pentru a deschide fereastra nativă de selectare folder
 #[tauri::command]
 fn pick_folder() -> Option<String> {
     rfd::FileDialog::new()
@@ -119,7 +152,7 @@ fn scan_folder(folder_path: String) -> Vec<LibrarySong> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init()) 
-        .invoke_handler(tauri::generate_handler![read_metadata, read_lrc_file, save_lrc_file, pick_folder, scan_folder]) 
+        .invoke_handler(tauri::generate_handler![read_metadata, read_lrc_file, save_lrc_file, pick_folder, scan_folder, fetch_online_lyrics]) 
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -19,44 +19,59 @@ export function LibraryPage() {
 
   const getFileName = (path: string) => path.split(/[/\\]/).pop() || "Unknown Audio";
 
-  const playSong = (path: string) => {
+  const playSong = async (path: string) => {
     audioService.loadSong(path);
     audioService.play();
     useLyricsStore.getState().resetLyrics();
 
     const tempId = getFileName(path);
+    let title = tempId;
+    let artist = "Unknown Artist";
 
-    invoke('read_metadata', { path })
-      .then((metadata: any) => {
-        usePlayerStore.getState().setMetadata(metadata.title, metadata.artist);
-        
-        if (metadata.picture && metadata.mime_type) {
-          const uint8Array = new Uint8Array(metadata.picture);
-          const blob = new Blob([uint8Array], { type: metadata.mime_type });
-          const url = URL.createObjectURL(blob);
-          usePlayerStore.getState().setCoverUrl(url);
-        } else {
-          usePlayerStore.getState().setCoverUrl(null);
-        }
-        
-        const finalId = `${metadata.artist || 'Unknown'} - ${metadata.title || tempId}`;
-        useLyricsStore.getState().setCurrentSongId(finalId);
+    try {
+      const metadata: any = await invoke('read_metadata', { path });
+    
+      title = metadata.title || tempId;
+      artist = metadata.artist || "Unknown Artist";
+      
+      usePlayerStore.getState().setMetadata(title, artist);
+      
+      if (metadata.picture && metadata.mime_type) {
+        const uint8Array = new Uint8Array(metadata.picture);
+        const blob = new Blob([uint8Array], { type: metadata.mime_type });
+        const url = URL.createObjectURL(blob);
+        usePlayerStore.getState().setCoverUrl(url);
+      } else {
+        usePlayerStore.getState().setCoverUrl(null);
+      }
+    } catch (metaError) {
+      console.warn("Metadatele or cover are missing.", metaError);
+      usePlayerStore.getState().setMetadata(title, artist);
+      usePlayerStore.getState().setCoverUrl(null);
+    }
 
-        usePlayerStore.getState().addToHistory({
-          path,
-          title: metadata.title || tempId,
-          artist: metadata.artist || "Unknown Artist"
-        });
-      })
-      .catch((err) => console.error("Metadata error:", err));
+    const finalId = `${artist} - ${title}`;
+    useLyricsStore.getState().setCurrentSongId(finalId);
+    usePlayerStore.getState().addToHistory({ path, title, artist });
 
     const lrcPath = path.substring(0, path.lastIndexOf('.')) + '.lrc';
-    invoke('read_lrc_file', { path: lrcPath })
-      .then((text: any) => {
-        const parsedLines = lyricsService.parseLRC(text);
+    
+    try {
+      const localText: any = await invoke('read_lrc_file', { path: lrcPath });
+      const parsedLines = lyricsService.parseLRC(localText);
+      useLyricsStore.getState().setLyrics(parsedLines);
+    } catch (localError) {
+      console.log(`No local .lrc found. Searching online for: ${title} - ${artist}`);
+      
+      try {
+        const onlineText: any = await invoke('fetch_online_lyrics', { title, artist });
+        const parsedLines = lyricsService.parseLRC(onlineText);
         useLyricsStore.getState().setLyrics(parsedLines);
-      })
-      .catch(() => console.log("No automatic .lrc found."));
+        console.log("Online lyrics successfully loaded!");
+      } catch (onlineError) {
+        console.log("No lyrics found online either:", onlineError);
+      }
+    }
   };
 
   const handleScanFolder = async () => {

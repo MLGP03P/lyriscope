@@ -1,61 +1,77 @@
-import { useLyricsStore } from '../../state/lyricsStore';
+import { useEffect, useRef } from 'react';
+import { usePlayerStore } from '../../state/playerStore';
+import { useLyricsStore, LyricLine } from '../../state/lyricsStore';
+import { audioService } from '../../services/audio';
 
 export function LyricsDisplay() {
+  const currentTime = usePlayerStore((state) => state.currentTime);
+  
   const lines = useLyricsStore((state) => state.lines);
-  const activeLineIndex = useLyricsStore((state) => state.activeLineIndex);
+  const offsetMs = useLyricsStore((state) => state.offsetMs);
   const fontSizeModifier = useLyricsStore((state) => state.fontSizeModifier);
+  
+  const activeLineRef = useRef<HTMLDivElement>(null);
 
-  if (lines.length === 0) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444' }}>
-        <p>Drag and drop an .lrc file here to add lyrics</p>
-      </div>
-    );
-  }
+  const effectiveTime = currentTime + (offsetMs / 1000);
+  const activeIndex = lines.findIndex((line: LyricLine, index: number) => {
+    const nextLine = lines[index + 1];
+    if (nextLine) {
+      return effectiveTime >= line.time && effectiveTime < nextLine.time;
+    }
+    return effectiveTime >= line.time;
+  });
+
+  useEffect(() => {
+    if (activeLineRef.current) {
+      activeLineRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }
+  }, [activeIndex]);
 
   return (
-    <div style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      padding: '20px',
-      width: '100%',
-      boxSizing: 'border-box',
-      position: 'relative',
-      zIndex: 10
-    }}>
-      {lines.map((line, index) => {
-        const isActive = index === activeLineIndex;
-        const distance = Math.abs(index - (activeLineIndex >= 0 ? activeLineIndex : 0));
+    <div style={{ height: '100%', overflowY: 'auto', padding: '50vh 20px', textAlign: 'center', scrollbarWidth: 'none' }}>
+      {lines.length > 0 ? (
+        lines.map((line: LyricLine, index: number) => {
+          const isActive = index === activeIndex;
+          
+          return (
+            <div
+              key={index}
+              ref={isActive ? activeLineRef : null}
+              style={{
+                transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                fontSize: isActive ? `${38 * fontSizeModifier}px` : `${28 * fontSizeModifier}px`,
+                fontWeight: isActive ? 'bold' : '600',
+                color: '#ffffff',
+                opacity: isActive ? 1 : 0.4,
+                
+                textShadow: isActive 
+                  ? '0px 0px 20px rgba(255, 255, 255, 0.7)' 
+                  : '0px 2px 4px rgba(0, 0, 0, 0.5)',
+                
+                transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                margin: isActive ? '30px 0' : '15px 0',
+                
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                const exactAudioTime = line.time - (offsetMs / 1000);
 
-        if (distance > 3) return null;
-
-        return (
-          <p key={index} style={{
-            fontSize: isActive ? `${Math.round(42 * fontSizeModifier)}px` : `${Math.round(26 * fontSizeModifier)}px`,
-            color: isActive ? '#ffffff' : '#888888',
-            opacity: isActive ? 1 : Math.max(0.1, 1 - (distance * 0.3)),
-            transform: 'translateZ(0)', 
-            
-            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-            textAlign: 'center',
-            margin: '10px 0',
-            lineHeight: '1.3',
-            fontWeight: 'bold',
-            textShadow: isActive ? '0 0 25px rgba(255,255,255,0.5)' : 'none',
-            
-            width: '90%',
-            maxWidth: '800px',
-            wordWrap: 'break-word',
-            willChange: 'font-size, opacity, text-shadow'
-          }}>
-            {line.text}
-          </p>
-        );
-      })}
+                const safeTime = Math.max(0, exactAudioTime);
+                audioService.seek(safeTime);
+              }}
+            >
+              {line.text}
+            </div>
+          );
+        })
+      ) : (
+        <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '20px', textShadow: '0px 2px 4px rgba(0,0,0,0.5)' }}>
+          Searching for lyrics...
+        </div>
+      )}
     </div>
   );
 }
