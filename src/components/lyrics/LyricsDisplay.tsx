@@ -3,6 +3,7 @@ import { usePlayerStore } from '../../state/playerStore';
 import { useLyricsStore, LyricLine } from '../../state/lyricsStore';
 import { audioService } from '../../services/audio';
 
+
 export function LyricsDisplay() {
   const currentTime = usePlayerStore((state) => state.currentTime);
   

@@ -3,9 +3,35 @@ import { useLyricsStore } from '../state/lyricsStore';
 import {convertFileSrc } from '@tauri-apps/api/core';
 
 const audioElement = new Audio();
+
+audioElement.crossOrigin = 'anonymous';
+
+let audioCtx: AudioContext | null = null;
+let analyser: AnalyserNode | null = null;
+let source: MediaElementAudioSourceNode | null = null;
+
+function initWebAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
+
+    source = audioCtx.createMediaElementSource(audioElement);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  }
+
+  if( audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
 audioElement.addEventListener('error', () => {
   console.error("🔴 Audio Player Error! Code:", audioElement.error?.code, "Message:", audioElement.error?.message);
 });
+
 
 audioElement.volume = usePlayerStore.getState().volume;
 
@@ -71,6 +97,7 @@ export const audioService = {
   },
 
   play: () => {
+    initWebAudio();
     audioElement.play()
       .then(() => usePlayerStore.getState().setIsPlaying(true))
       .catch((err) => console.error("🔴 Playback Error:", err));
@@ -88,5 +115,12 @@ export const audioService = {
 
   setVolume: (volume: number) => {
     audioElement.volume = volume;
+  },
+
+  getAnalyserData: (dataArray: Uint8Array) => {
+    if (analyser) {
+      // @ts-expect-error
+      analyser.getByteFrequencyData(dataArray);
+    }
   }
 };
